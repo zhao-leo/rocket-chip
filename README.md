@@ -63,7 +63,7 @@ Generating verilog
 
 Generating verilog for a specific Config
 
-    $ make verilog CONFIG=DefaultSmallConfig
+    $ make verilog CONFIG=freechips.rocketchip.system.DefaultSmallConfig
 
 ### Keeping Your Repo Up-to-Date
 
