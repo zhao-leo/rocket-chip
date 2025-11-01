@@ -4,7 +4,7 @@ project/target
 docs/generated
 docs-target/
 *.fir
-*.v
+#*.v
 *.anno.json
 *.swp
 *~
@@ -16,3 +16,4 @@ rocketchip.jar
 *#
 .#*
 venv/
+.idea/
