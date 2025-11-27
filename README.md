@@ -39,12 +39,6 @@ For possible time adjustments, they will be negotiated in Slack and published in
 Install nix:
 
     $ sh <(curl -L https://nixos.org/nix/install) --daemon
-    $ . ~/.nix-profile/etc/profile.d/nix.sh
-    $ git submodule update --init
-
-Set path in $HOME/.bashrc:
-
-    $ export PATH="$HOME/.nix-profile/bin:$PATH"
 
 Edit /etc/nix/nix.conf and add the following line:
 
@@ -214,13 +208,13 @@ Then follow the steps:
 2. Patch the `argv` in `.bsp/mill-bsp.json`, from
 
    ```json
-   {"name":"mill-bsp","argv":["/usr/bin/mill","--bsp","--disable-ticker","--color","false","--jobs","1"],"millVersion":"0.10.9","bspVersion":"2.0.0","languages":["scala","java"]}
+   {"name":"mill-bsp","argv":["mill","--bsp","--disable-ticker","--color","false","--jobs","1"],"millVersion":"0.10.9","bspVersion":"2.0.0","languages":["scala","java"]}
    ```
 
    to
 
    ```json
-   {"name":"mill-bsp","argv":["/usr/bin/nix","develop","-c","mill","--bsp","--disable-ticker","--color","false","--jobs","1"],"millVersion":"0.10.9","bspVersion":"2.0.0","languages":["scala","java"]}
+   {"name":"mill-bsp","argv":["nix","develop","-c","mill","--bsp","--disable-ticker","--color","false","--jobs","1"],"millVersion":"0.10.9","bspVersion":"2.0.0","languages":["scala","java"]}
    ```
 
 ### For IntelliJ users

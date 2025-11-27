@@ -1,8 +1,7 @@
 {
   "name": "mill-bsp",
   "argv": [
-    "sudo",
-    "/usr/bin/nix",
+    "nix",
     "develop",
     "-c",
     "mill",
