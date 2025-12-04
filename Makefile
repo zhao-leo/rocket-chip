@@ -8,8 +8,7 @@ CFG_PROJECT ?= $(PROJECT)
 CONFIG_FULL ?= $(CFG_PROJECT).$(CONFIG)
 MILL ?= mill
 
+# Default verilog generation (for simulation)
 verilog:
-	cd $(base_dir) && $(MILL) emulator[freechips.rocketchip.system.TestHarness,$(CONFIG_FULL)].mfccompiler.compile
-
-clean:
-	rm -rf out/
+	echo "Generating Verilog..."
+	cd $(base_dir) && $(MILL) emulator[freechips.rocketchip.system.$(MODEL),$(CONFIG_FULL)].mfccompiler.compile
