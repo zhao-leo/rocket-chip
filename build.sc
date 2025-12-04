@@ -411,7 +411,7 @@ object emulator extends Cross[Emulator](
   ("freechips.rocketchip.system.TestHarness", "freechips.rocketchip.system.LitexConfigBig8x8"),
 
   // FPGA
-  ("freechips.rocketchip.system.FPGARocket","freechips.rocketchip.system.DefaultFPGARocketConfig")
+  ("freechips.rocketchip.system.FPGARocketTop","freechips.rocketchip.system.DefaultFPGARocketConfig")
 )
 
 object `runnable-riscv-test` extends mill.Cross[RiscvTest](

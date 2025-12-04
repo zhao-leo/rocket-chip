@@ -1,39 +1,4 @@
-Rocket Chip Generator :rocket: ![Build Status](https://github.com/chipsalliance/rocket-chip/workflows/Continuous%20Integration/badge.svg?branch=master)
-=====================
-
-This repository contains the Rocket chip generator necessary to instantiate
-the RISC-V Rocket Core. For more information on Rocket Chip, please consult our [technical report](https://www2.eecs.berkeley.edu/Pubs/TechRpts/2016/EECS-2016-17.html).
-
-## RocketChip Dev Meeting
-
-RocketChip development meetings happen every 2 weeks on Wednesday 17:00 – 18:00am CST (Pacific Time - Los Angeles) with meeting notes [here](https://docs.google.com/document/d/1NjDnf-i10QE0y-qI94A67uCspDRdCIS_IRTm4jc0Ycc):
-- Click [here](https://calendar.google.com/calendar/ical/c_699527d804418f900468a49b413d1f9c08e13c0f3f872ce551fc0470d4cdf983%40group.calendar.google.com/public/basic.ics) to subscribe Meeting Schedule(iCal format)
-- Click [here](https://calendar.google.com/calendar/embed?src=c_699527d804418f900468a49b413d1f9c08e13c0f3f872ce551fc0470d4cdf983%40group.calendar.google.com) to view Meeting Schedule via Google Calendar
-- Click [here](https://sifive.zoom.us/j/93899365000?pwd=UG1HSFJ4ODFzR2dhMHU2bUNqbXc3Zz09) to join Zoom meeting (ID: 93899365000, passcode: 754340)
-
-For possible time adjustments, they will be negotiated in Slack and published in the calendar.
-
-## Table of Contents
-
-+ [Quick instructions](#quick) for those who want to dive directly into the details without knowing exactly what's in the repository.
-+ [What's in the Rocket chip generator repository?](#what)
-+ [How should I use the Rocket chip generator?](#how)
-    + [Using the cycle-accurate Verilator simulation](#emulator)
-    + [Mapping a Rocket core down to an FPGA](#fpga)
-    + [Pushing a Rocket core through the VLSI tools](#vlsi)
-+ [How can I parameterize my Rocket chip?](#param)
-+ [Debugging with GDB](#debug)
-+ [Building Rocket Chip with an IDE](#ide)
-+ [Contributors](#contributors)
-
-## <a name="quick"></a> Quick Instructions
-
-### Checkout The Code
-
-    $ git clone https://github.com/ucb-bar/rocket-chip.git
-    $ cd rocket-chip
-    $ git submodule update --init
-
+## Env Setup
 ### Nix Install
 
 Install nix:
@@ -229,15 +194,3 @@ Then follow the steps:
 3. Install and configure [Metals](https://marketplace.visualstudio.com/items?itemName=scalameta.metals) extension.
 
 4. Execute VSCode command `Metals: Import build`.
-
-## <a name="contributors"></a> Contributors
-
-Contributing guidelines can be found in [CONTRIBUTING.md](CONTRIBUTING.md).
-
-A list of contributors can be found [here](https://github.com/chipsalliance/rocket-chip/graphs/contributors).
-
-## <a name="attribution"></a> Attribution
-
-If used for research, please cite Rocket Chip by the technical report:
-
-Krste Asanović, Rimas Avižienis, Jonathan Bachrach, Scott Beamer, David Biancolin, Christopher Celio, Henry Cook, Palmer Dabbelt, John Hauser, Adam Izraelevitz, Sagar Karandikar, Benjamin Keller, Donggyu Kim, John Koenig, Yunsup Lee, Eric Love, Martin Maas, Albert Magyar, Howard Mao, Miquel Moreto, Albert Ou, David Patterson, Brian Richards, Colin Schmidt, Stephen Twigg, Huy Vo, and Andrew Waterman, _[The Rocket Chip Generator](https://www2.eecs.berkeley.edu/Pubs/TechRpts/2016/EECS-2016-17.html)_, Technical Report UCB/EECS-2016-17, EECS Department, University of California, Berkeley, April 2016

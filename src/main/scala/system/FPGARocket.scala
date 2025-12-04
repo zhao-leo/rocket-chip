@@ -28,66 +28,95 @@ import sifive.blocks.devices.uart._
 
 // ============================================================================
 // Vivado Clock Primitives (BlackBox wrappers)
+// Vivado will automatically recognize these as built-in primitives
 // ============================================================================
 
 /** IBUFDS: Differential Input Buffer for Vivado */
-class IBUFDS extends BlackBox with HasBlackBoxInline {
+class IBUFDS extends BlackBox {
   val io = IO(new Bundle {
     val O = Output(Clock())
     val I = Input(Clock())
     val IB = Input(Clock())
   })
-
-  setInline("IBUFDS.v",
-    """module IBUFDS(
-      |  output O,
-      |  input I,
-      |  input IB
-      |);
-      |  // Vivado will replace this with the actual primitive
-      |  // For simulation, just pass through I
-      |  assign O = I;
-      |endmodule
-      |""".stripMargin)
 }
 
 /** BUFG: Global Clock Buffer for Vivado */
-class BUFG extends BlackBox with HasBlackBoxInline {
+class BUFG extends BlackBox {
   val io = IO(new Bundle {
     val O = Output(Clock())
     val I = Input(Clock())
   })
-
-  setInline("BUFG.v",
-    """module BUFG(
-      |  output O,
-      |  input I
-      |);
-      |  // Vivado will replace this with the actual primitive
-      |  // For simulation, just pass through I
-      |  assign O = I;
-      |endmodule
-      |""".stripMargin)
 }
 
-/** Clock generator using Vivado primitives */
+/** MMCME2_BASE: Mixed-Mode Clock Manager for Vivado
+  * Used to divide 200MHz input clock to 50MHz output clock
+  * Parameters are set via generic map for 200MHz -> 50MHz:
+  *   CLKFBOUT_MULT_F = 5.0 (200 * 5 = 1000 MHz VCO)
+  *   CLKOUT0_DIVIDE_F = 20.0 (1000 / 20 = 50 MHz)
+  *   CLKIN1_PERIOD = 5.0 (200 MHz = 5ns period)
+  */
+class MMCME2_BASE extends BlackBox(Map(
+  "CLKFBOUT_MULT_F" -> 5.0,      // VCO = 200 * 5 = 1000 MHz
+  "CLKOUT0_DIVIDE_F" -> 20.0,    // CLKOUT0 = 1000 / 20 = 50 MHz
+  "CLKIN1_PERIOD" -> 5.0,        // 200 MHz input = 5ns period
+  "DIVCLK_DIVIDE" -> 1
+)) {
+  val io = IO(new Bundle {
+    val CLKOUT0 = Output(Clock())
+    val CLKOUT0B = Output(Clock())
+    val CLKOUT1 = Output(Clock())
+    val CLKOUT1B = Output(Clock())
+    val CLKOUT2 = Output(Clock())
+    val CLKOUT2B = Output(Clock())
+    val CLKOUT3 = Output(Clock())
+    val CLKOUT3B = Output(Clock())
+    val CLKOUT4 = Output(Clock())
+    val CLKOUT5 = Output(Clock())
+    val CLKOUT6 = Output(Clock())
+    val CLKFBOUT = Output(Clock())
+    val CLKFBOUTB = Output(Clock())
+    val LOCKED = Output(Bool())
+    val CLKIN1 = Input(Clock())
+    val PWRDWN = Input(Bool())
+    val RST = Input(Bool())
+    val CLKFBIN = Input(Clock())
+  })
+}
+
+/** Clock generator using Vivado primitives
+  * Input: 200MHz differential clock (clock_p, clock_n)
+  * Output: 50MHz system clock (clk_out) and locked signal
+  */
 class VivadoClockGen extends RawModule {
   val io = IO(new Bundle {
     val clk_p = Input(Clock())
     val clk_n = Input(Clock())
     val clk_out = Output(Clock())
+    val locked = Output(Bool())
   })
 
-  // Instantiate IBUFDS for differential clock input
+  // Instantiate IBUFDS for differential clock input (200 MHz)
   val ibufds = Module(new IBUFDS)
   ibufds.io.I := io.clk_p
   ibufds.io.IB := io.clk_n
 
-  // Instantiate BUFG for global clock distribution
-  val bufg = Module(new BUFG)
-  bufg.io.I := ibufds.io.O
+  // Instantiate MMCME2_BASE for clock division (200 MHz -> 50 MHz)
+  val mmcm = Module(new MMCME2_BASE)
+  mmcm.io.CLKIN1 := ibufds.io.O
+  mmcm.io.RST := false.B
+  mmcm.io.PWRDWN := false.B
 
-  io.clk_out := bufg.io.O
+  // Feedback path for MMCM
+  val bufg_fb = Module(new BUFG)
+  bufg_fb.io.I := mmcm.io.CLKFBOUT
+  mmcm.io.CLKFBIN := bufg_fb.io.O
+
+  // Output clock through BUFG (50 MHz)
+  val bufg_out = Module(new BUFG)
+  bufg_out.io.I := mmcm.io.CLKOUT0
+
+  io.clk_out := bufg_out.io.O
+  io.locked := mmcm.io.LOCKED
 }
 
 // ============================================================================
@@ -384,18 +413,21 @@ class FPGARocketSystemWrapperImp(outer: FPGARocketSystemWrapper)(implicit p: Par
 
 // ============================================================================
 // FPGA Top Module: FPGARocketTop (RawModule with differential clock)
-// Uses Vivado clock primitives (IBUFDS, BUFG)
+// Uses Vivado clock primitives (IBUFDS, MMCME2_BASE, BUFG)
+// Input: 200MHz differential clock -> Output: 50MHz system clock
 // ============================================================================
 
 /**
   * Top-level FPGA module with differential clock, reset, and UART.
   * Ports:
-  *   - clock_p, clock_n: Differential clock inputs (uses IBUFDS + BUFG)
+  *   - clock_p, clock_n: 200MHz Differential clock inputs (uses IBUFDS + MMCM + BUFG)
   *   - reset: Active-high reset
   *   - uart_tx, uart_rx: UART interface
+  *
+  * Clock: 200MHz input -> 50MHz system clock (via MMCME2_BASE)
   */
 class FPGARocketTop(implicit p: Parameters) extends RawModule {
-  // Differential clock inputs
+  // Differential clock inputs (200 MHz)
   val clock_p = IO(Input(Clock()))
   val clock_n = IO(Input(Clock()))
 
@@ -406,62 +438,18 @@ class FPGARocketTop(implicit p: Parameters) extends RawModule {
   val uart_tx = IO(Output(Bool()))
   val uart_rx = IO(Input(Bool()))
 
-  // Use Vivado clock primitives for differential clock
+  // Use Vivado clock primitives for differential clock with MMCM
+  // 200 MHz -> 50 MHz
   val clkGen = Module(new VivadoClockGen)
   clkGen.io.clk_p := clock_p
   clkGen.io.clk_n := clock_n
   val sys_clock = clkGen.io.clk_out
+  val mmcm_locked = clkGen.io.locked
 
   // Reset synchronizer (2-stage synchronizer for metastability)
+  // Also hold reset until MMCM is locked
   val reset_sync = withClockAndReset(sys_clock, reset.asAsyncReset) {
-    val r0 = RegNext(reset, true.B)
-    val r1 = RegNext(r0, true.B)
-    r1
-  }
-
-  // Instantiate the system wrapper
-  withClockAndReset(sys_clock, reset_sync.asAsyncReset) {
-    val wrapper = Module(LazyModule(new FPGARocketSystemWrapper).module)
-
-    wrapper.io.sys_clock := sys_clock
-    wrapper.io.sys_reset := reset_sync
-
-    // Connect UART ports
-    uart_tx := wrapper.io.uart.txd
-    wrapper.io.uart.rxd := uart_rx
-
-    // Handle optional CTS/RTS signals
-    wrapper.io.uart.cts_n.foreach(_ := false.B)
-  }
-}
-
-// ============================================================================
-// Alternative Top Module: Single-ended clock version (for boards without diff clock)
-// ============================================================================
-
-/**
-  * Top-level FPGA module with single-ended clock input.
-  * Use this for boards that don't have differential clock inputs.
-  */
-class FPGARocketTopSingleClock(implicit p: Parameters) extends RawModule {
-  // Single-ended clock input
-  val clock = IO(Input(Clock()))
-
-  // Reset (active-high)
-  val reset = IO(Input(Bool()))
-
-  // UART interface
-  val uart_tx = IO(Output(Bool()))
-  val uart_rx = IO(Input(Bool()))
-
-  // Use BUFG for clock distribution
-  val bufg = Module(new BUFG)
-  bufg.io.I := clock
-  val sys_clock = bufg.io.O
-
-  // Reset synchronizer (2-stage synchronizer for metastability)
-  val reset_sync = withClockAndReset(sys_clock, reset.asAsyncReset) {
-    val r0 = RegNext(reset, true.B)
+    val r0 = RegNext(reset || !mmcm_locked, true.B)
     val r1 = RegNext(r0, true.B)
     r1
   }
@@ -509,41 +497,10 @@ class FPGABaseConfig extends Config(
   new BaseSubsystemConfig
 )
 
-/** Default FPGA configuration with Small Rocket core and RoCC accelerator */
+/** Default FPGA configuration with Big Rocket core and RoCC accelerator */
 class DefaultFPGARocketConfig extends Config(
   new WithRoccExample ++                           // Add RoCC accelerator examples
   new freechips.rocketchip.rocket.WithNSmallCores(1) ++
-  new WithCoherentBusTopology ++
-  new FPGABaseConfig
-)
-
-/** FPGA configuration with Small Rocket core and RoCC accelerator */
-class FPGASmallRocketConfig extends Config(
-  new WithRoccExample ++                           // Add RoCC accelerator examples
-  new freechips.rocketchip.rocket.WithNSmallCores(1) ++
-  new WithCoherentBusTopology ++
-  new FPGABaseConfig
-)
-
-/** FPGA configuration with Big Rocket core and RoCC accelerator */
-class FPGABigRocketConfig extends Config(
-  new WithRoccExample ++                           // Add RoCC accelerator examples
-  new freechips.rocketchip.rocket.WithNBigCores(1) ++
-  new WithCoherentBusTopology ++
-  new FPGABaseConfig
-)
-
-/** FPGA configuration without RoCC accelerator (smaller footprint) */
-class FPGASmallRocketNoRoCCConfig extends Config(
-  new freechips.rocketchip.rocket.WithNSmallCores(1) ++
-  new WithCoherentBusTopology ++
-  new FPGABaseConfig
-)
-
-/** FPGA configuration with Medium Rocket core and RoCC accelerator */
-class FPGAMedRocketConfig extends Config(
-  new WithRoccExample ++                           // Add RoCC accelerator examples
-  new freechips.rocketchip.rocket.WithNMedCores(1) ++
   new WithCoherentBusTopology ++
   new FPGABaseConfig
 )

@@ -10,5 +10,9 @@ MILL ?= mill
 
 # Default verilog generation (for simulation)
 verilog:
-	echo "Generating Verilog..."
-	cd $(base_dir) && $(MILL) emulator[freechips.rocketchip.system.$(MODEL),$(CONFIG_FULL)].mfccompiler.compile
+	@echo -e "\nGenerating Verilog..."
+	@cd $(base_dir) && $(MILL) emulator[freechips.rocketchip.system.$(MODEL),$(CONFIG_FULL)].mfccompiler.compile
+
+clean:
+	@echo -e "\nCleaning..."
+	@rm -rf out
